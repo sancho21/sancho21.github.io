@@ -1,0 +1,241 @@
+---
+layout: post
+title:  "How Docker can make your coding life easier"
+date:   2018-03-10 00:12:10 +0800
+categories: docker devops
+---
+Have you ever had a situation where you have to use different versions of the same database? Probably because some legacy apps can only work with an old version of the database, while other apps work with a more recent one. If you have, and you had headache, then Docker probably is the answer for you.
+
+## So..., what is it?
+
+I won't tell you more about the architecture in details. TL;DR; Docker is like VM (Virtualbox or VMWare) in a way that both allow you to install many applications a long with their configuration, but different in a way that, Docker is much lighter because all instances of it share the same Linux kernel. It is a way to encapsulate an application and its configuration within a small image. You can install Docker on many popular OSes, including Ubuntu Linux and Windows.
+
+## Running an image
+
+"Running an image" also means "creating a container" as container is a running instance of an image.
+
+```
+docker run --rm <account>/<image name>:<tag> command on the container
+```
+
+For e.g.
+
+```sh
+docker run --rm openjdk:8-jre java -version
+```
+
+`<account>` is only required if your image is not published in Docker official? Option `--rm` is to automatically remove the container when it exits.
+
+## Running a Java app locally using a JRE Docker image
+
+Supposed that you want to run [this JAR app](http://central.maven.org/maven2/com/h2database/h2/1.4.196/h2-1.4.196.jar) using Java 8 image. In a normal environment, you'd run it with:
+
+```sh
+java -jar h2-1.4.196.jar
+```
+
+To use JRE inside Docker image, you have to map local directory containing the JAR file into a directory inside the Docker image. The directory will be created automatically if it doesn't exist.
+
+```sh
+docker run --rm \
+  --mount type=bind,source=c:\Downloads,target=/app \
+  openjdk:8-jre java -jar /app/h2-1.4.196.jar
+```
+
+## Creating an image
+
+You can use either Dockerfile or [Packer](https://packer.io). Packer is more generic, not just for building Docker images. But, IMHO, the parameters used in Packer for Docker build script are also specific. It's much worth to use Dockerfile instead :)
+
+So, I'm going to tell you how to create image using **Dockerfile** which is a Docker script file containing instructions how to build an image. Here, we're going to create a Java image based on openjdk 8, and have a H2 database app installed inside.
+
+```docker
+FROM openjdk:8-jre
+
+ADD http://central.maven.org/maven2/com/h2database/h2/1.4.196/h2-1.4.196.jar /app.jar
+
+# The final blocking command to run the app
+CMD ["java", "-jar", "/app.jar"]
+```
+
+To build it, run:
+
+```sh
+cd /path/to/dir/containing/docker/script/
+docker build -t sancho21/h2:1.4.196 .
+```
+
+To run the image, run:
+
+```sh
+docker run --rm sancho21/h2:1.4.196
+```
+
+Note about `-t`:
+
+* sancho21 => your Docker online account
+* h2 => Name of this image
+* 1.4.196 => Tag
+
+Notice that, port 8082 is not accessible by host machine (your notebook), hence you have to map that docker port into a host port. To do it, do:
+
+1. Update the script to expose that port by adding `EXPOSE 8082` right before `CMD ...` part. Then rebuild with the same command above.
+2. Map that port into host machine when running it.
+   ```sh
+   docker run --rm -p 8989:8082 sancho21/h2:1.4.196
+   ```
+3. Open http://localhost:8989 in your browser.
+
+## Some useful script commands
+
+```docker
+# ADD: To add files from local or from URL
+ADD http://hello.com/file.sh /opt/install
+
+# RUN: Run anything in the OS of the container
+RUN touch /tmp/combination
+
+# Exposing port 3306
+EXPOSE 3306
+
+# Defining a variable
+ENV OTRS_VER 5.0.15
+```
+
+## Storage
+
+Persistency are achievable by either 2 ways
+
+* **Volume** is where the exact location in the host system will be determined by Docker. No non-Docker app may have access to it as the location is managed and protected by Docker. It is the most recommended persistency model, as it's easier to backup.
+  
+  This is to specify that this path should persistent directory of the container, even after shutdown: `--mount source=myvol,target=/var/lib/mysql`. If you don't specify volume name, then the volume will be destroyed as soon as the associated container is removed.
+
+* **Bind mount** is a mapping of your local machine directory into a directory in the container. Non-Docker apps may have access to the directory. This is how to di it: `--mount type=bind,source=/home/ichsan/mysql/conf,target=/etc/mysql.conf.d`.
+
+An example how to start a mysql service using the volume
+```sh
+docker run \
+  --mount source=otrs-ssh-volume,target=/etc/mysql/conf.d,readonly \
+  --name some-mariadb -e MYSQL_ROOT_PASSWORD=secret mariadb
+```
+
+A `Dockerfile` only knows this kind of definition `VOLUME ["/var/lib/mysql", "/other/path"]` which are by default anonymous volumes, and could be changed later into either named volumes or bind mounts.
+
+Read all possible options at [Docker website](https://docs.docker.com/storage/bind-mounts/#configure-bind-propagation).
+
+### Creating a volume
+
+```sh
+docker volume create --driver vieux/sshfs \
+   -o sshcmd=ichs002@10.16.30.11:/tmp/otrs \
+   -o password=secret123 otrs-ssh-volume
+```
+
+Read more [here](https://docs.docker.com/engine/admin/volumes/volumes/#use-a-volume-driver)
+
+## Important options to run an image
+
+* To let host access an exposed port: `-p your_machine_port:internal_docker_port` e.g. `docker run -p 8081:8080 id.web.michsan/stemmer-spring-boot:1.0`
+  Then you can access it using localhost:8081
+
+* To run in background: `-d`
+  To attach to the daemon, use `docker attach conta1ner0hash0code`
+
+  But, when the docker service is restarted (the /etc/init.d/docker),
+  it won't be restarted unless option `--restart` with a certain value is used as mentioned [here](https://docs.docker.com/config/containers/start-containers-automatically/#use-a-restart-policy).
+
+* If you want to set your working dir: `-w /path/on/internal_docker`
+  e.g.
+  
+  ```sh
+  docker run --rm  \
+    --mount type=bind,source=$PWD,target=/app \
+	-w /app sancho21/oracle-java:6 \
+	java -cp . sancho21.Application
+  ```
+
+## Important commands
+
+* To list running containers: `docker ps` (To list stopped ones, use `docker ps -f "status=exited"`)
+* To stop a running container: `docker stop conta1ner0hash0code`
+* To start a container: `docker start conta1ner0hash0code`
+* To remove a container: `docker rm conta1ner0hash0code`
+* Access its shell (bash): `docker exec -i -t conta1ner0hash0code /bin/bash`
+
+If you hate using container IDs (hash code), you can use container names.
+
+
+## Docker compose
+
+It is a tool to build an application consisting of multiple containers working together. The configuration file is named `docker-compose.yml` and you start the app by running `docker-compose up` (use `-d` to run in background). If you use other name like otrs.yml, then you must run it this way `docker-compose -f otrs.yml up`
+
+The following example will start a wordpress application consisting of a wordpress apache image and a database image.
+
+```yml
+version: '3.4'
+
+services:
+
+  wordpress:
+    image: wordpress
+    restart: always
+    ports:
+    - 8080:80
+    environment:
+      WORDPRESS_DB_PASSWORD: secret
+    links:
+    - wordpress_db:mysql
+
+  wordpress_db:
+    image: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+    volumes:
+    - /var/lib/mysql
+```
+
+Some explanation on the used options:
+
+* `image` is the image to use, it could be detailed like `sancho21/otrs:5.0.15`.
+* `ports` is to map `host_port:container_port`
+* `environment` defines variables assigned to start the container.
+
+```yml
+version: '3.4'
+
+services:
+
+  otrs:
+    build: otrs
+    restart: always
+    volumes:
+    - type: volume
+      target: /opt/otrs/Kernel
+    ports:
+    - 8181:80
+
+  otrs_db:
+    image: mariadb
+    restart: always
+    volumes:
+    - type: volume
+      target: /var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+    command: ["mysqld", "--max_allowed_packet=20M", "--query_cache_size=32M", "--innodb_log_file_size=256M", "--innodb_file_per_table=1"]
+```
+
+Some explanation on the used options:
+
+* `build` is a directory name which contains `Dockerfile`
+* `command` is to override the default command specified in the original image to start the container.
+
+When configuring otrs container above, you can refer to DB host by using its container name, `otrs_db`
+
+`docker-compose` will re-create all involved containers (preserving the mounted volumes) if, the image has changed or there's a service configuration (the .yml file has changed).
+
+Read more about options used in a Docker compose file [here](https://docs.docker.com/compose/compose-file/)
+
+A popular alternative to Docker compose is [Kubernetes](https://kubernetes.io/)
+
+Ref: https://blog.codeship.com/docker-machine-compose-and-swarm-how-they-work-together/
