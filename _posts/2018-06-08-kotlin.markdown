@@ -1,0 +1,443 @@
+---
+layout: post
+title:  "How Kotlin makes your coding life fun again"
+date:   2018-06-08 15:02:10 +0800
+categories: kotlin programming-language
+---
+## What animal is Kotlin?
+
+Statically typed, JVM targeted, general-purpose programming language developed by JetBrains intended for industrial use.
+
+
+## Features
+
+* **Extension functions**
+
+  Used to add methods into an existing class, even though it's a final class.
+  ```kotlin
+  fun String.reverse(): String {
+    new StringBuilder(this).reverse().toString()
+  }
+  
+  // This way you can do
+  "Hello".reverse()
+  ```
+  
+* **Static null-safety guarantees**
+
+  There's no need to do defensive programming like this:
+  
+  ```java
+  public static Character readFirstLetter(Class<?> clazz) { 
+    if (clazz == null) { // Preparing if clazz is null
+      return null;
+	} 
+	return clazz.getName().charAt(0); 
+  } 
+  ```
+  
+  By default all type is non-null in Kotlin. To allow null use `?` in the end of the type.
+  
+  ```kotlin
+  fun readFirstLetter(clazz: Class<Any>): Char = clazz.name.first()
+
+  fun readFirstLetterWithCheck(clazz: Class<Any>?): Char? {
+    if (clazz == null) {
+      return null
+    }
+    return clazz.name.first() 
+  }
+  ```
+
+* **Implicit casts after type checks**
+
+  No need to cast if the type is known already. 
+  
+  If in Java ..
+  ```java
+  Object obj = "Hello World"; 
+  if (obj instanceof String) { 
+    // Cast first to String to use String's methods 
+    String upper = ((String) obj).toUpperCase(); 
+  }  
+  ```
+  
+  then in Kotlin
+  ```kotlin
+  val obj = "Hello World" 
+  if (obj is String) { 
+    // Kotlin knows obj is string already
+    val upper = obj.toUpperCase()
+  } 
+  ```
+
+  Regarding lazy evaluation, this is also possible in Kotlin
+  
+  ```kotlin
+  if (obj !is String || obj.length == 0) return
+  ```
+
+* Inline functions
+  
+  It is used to reduced unnecessary instance creation of function passed into a method.
+
+  Given this is the way to call a function:
+  ```kotlin
+  withTx { println(“In a transaction!") } 
+  ```
+  
+  ```kotlin
+  fun withTx(targetFun: ()-> Unit) {
+    transaction.begin()
+    targetFun()
+    transaction.commit()
+  }
+  ```
+  
+  will generate something like:
+  ```java
+  void withTx(new Function() {
+    public void invoke() {
+      System.out.println("In a transaction!");
+    }
+  });
+  ```
+  
+  But when prefixed with `inline` as in `inline fun withTx(targetFun: ()-> Unit) {`, it will generate
+  ```java
+  transaction.begin();
+  System.out.println("In a transaction!"); 
+  transaction.commit();
+  ```
+
+* **Reified generics**
+
+  In Java, it is not possible to read generic type, unless you pass a class of that type as a method parameter. It is because it's not avaiable during runtime.
+  In Kotlin, this is possible by using `reified` keyword in conjuction with `inline` keyword.
+  
+  ```kotlin
+  inline fun <reified T: Any> String.toKotlinObject(): T {
+    val mapper = jacksonObjectMapper()
+    return mapper.readValue(this, T::class.java)
+  }
+  ```
+  
+  And then it is possible to call this way:
+  ```kotlin
+  val fred: Student = json.toKotlinObject()
+  ```
+  
+  Ichsan: Rare case. Not really important :)
+
+* **First-class delegation**
+
+  ```java
+  class DecoratedConnection implements Connection {
+    private final Connection con;
+
+    public DecoratedConnection(Connection con) {
+        this.con = con;
+    }
+
+    public void decorateStatus() {
+        System.out.println("This is decorate method");
+    }
+    
+    // Non productivity starts here :)
+    @Override
+    public Statement createStatement() throws SQLException {
+        return con.createStatement();
+    }
+	
+    // .. continue the same way with other methods
+  }
+  ```
+
+It's not about writing less, but to read less.
+
+1. Defining final variables
+
+   ```java
+   final List<String> names = new ArrayList<>();
+   names.add("Bob");
+   names.add("Tom");
+
+   int i = 0;
+   while (i < names.getSize()) {
+     System.out.println("name[" + i + "] = " + names.get(i));
+   }
+   ```
+   
+   into
+   
+   ```kotlin
+   val names = ArrayList<String>()
+   names.add("Bob")
+   names.add("Tom")
+   
+   var i = 0
+   while (i < names.size) {
+     println("name[$i] = ${names[i++]}")
+   }
+   ```
+
+2. No getter
+
+   ```java
+   List<String> words = new ArrayList<>();
+   int s = words.getSize();
+   ```
+   
+   ```kotlin
+   val words = ArrayList<String>()
+   val s = words.size
+   ```
+
+3. Data classes
+
+   ```
+   public class Customer {
+     private final String name;
+	 private String age;
+	 
+     public Customer(String name, int age) {
+	   this.name = name;
+	   this.age = age;
+     }
+	 
+	 public String getName() {
+	   return name;
+	 }
+	 
+	 public int getAge() {
+	   return age;
+	 }
+	 
+	 public void setAge(int age) {
+	   this.age = age;
+	 }
+	 
+	 // Also:
+	 //   public String toString()
+	 //   public int hashCode()
+	 //   public boolean equals(Object o)
+   }
+   ```
+   
+   ```kotlin
+   data class Customer(val name: String, var age: Int)
+   ```
+  
+4. No need to cast after checking
+
+   ```java
+   if (o instanceof String) {
+     ((String) o).toUppercase();
+   }
+   ```
+   
+   ```kotlin
+   if (o instanceof String) {
+     o.toUppercase()
+   }
+   ```
+   
+   Or...
+   
+   ```kotlin
+   (o as? String)?.toUppercase() // In the bracket, it reads "Try to cast it as a String, else make it null"
+   ```
+
+5. Null check safety
+
+   All types in Kotlin is always non-null, unless appended with `?`.
+   
+   ```java
+   void validateCustomer(Customer customer) {
+     if (customer != null && customer.name != null && customer.name.startWith("M")) {
+	   throw new InvalidPrimeMinister();
+	 }
+   }
+   ```
+   
+   ```kotlin
+   void validateCustomer(val customer: Customer) {
+     if (customer.name.startWith("M")) {
+	   throw InvalidPrimeMinister();
+	 }
+   }
+   ```
+   
+   Or, if it accept null objects
+   ```kotlin
+   void validateCustomer(val customer: Customer?) {
+     if (customer?.name?.startWith("M")) {
+	   throw InvalidPrimeMinister();
+	 }
+   }
+   ```
+   
+
+6. No complicated switch
+
+   ```java
+   switch (port) {
+     case 80:
+	 case 8080:
+	   type = "HTTP";
+	   break;
+	 case 443:
+	   type = "HTTPS";
+	   break;
+	 case 3306:
+	   type = "DATABASE";
+	   break;
+	 default:
+	   if (port >= 6881 && port <= 6889) {
+	     type = "TORRENT";
+	   } else {
+	     type = "UNKNOWN";
+	   }
+   }
+   ```
+   
+   ```kotlin
+   val type = when (port) {
+     80, 8080 -> "HTTP"
+	 443 -> "HTTPS"
+	 3306 -> "DATABASE"
+	 in 6881..6889 -> "TORRENT"
+	 else -> "UNKNOWN"
+   }
+   ```
+   
+7. Default parameter values
+
+   ```java
+   String split(String text, String delimiter) {
+     // ...
+   }
+   
+   String split(String text) {
+     return split(text, " ");
+   }
+   ```
+   
+   ```kotlin
+   String split(text: String, delimiter: String = " ") {
+     // ...
+   }
+   ```
+   
+8. Simplified range definition
+
+   ```java
+   IntStream numbers = IntStream.range(1, 100);
+   ```
+   
+   ```kotlin
+   val numbers: IntRange = 1..100
+   ```
+   
+9. No need to keep unused variables in Lambda expression
+
+   ```java
+   button.addActionListenerEvent(e -> System.out.println("I was pushed"));
+   ```
+   
+   ```kotlin
+   button.addActionListenerEvent { println("I was pushed") }
+   button.addActionListenerEvent { println("I was pushed by event $it") }
+   ```
+
+10. Defining lambda parameters is simpler
+
+   ```java
+   public static void main(String[] args) {
+     get("/students/1", (request, response) -> { /* blah blah blah */ });
+   }
+   
+   public static void get(String path, BiConsumer<HttpRequest, HttpResponse> handler) {
+     // blah blah blah
+   }
+   ```
+   
+   ```kotlin
+   fun main(args: Array<String>) {
+     get("/students/1", {request, response -> /* blah blah blah */})
+	 
+	 // Similar to:
+     get("/students/1") {request, response -> /* blah blah blah */}
+   }
+   
+   fun get(path: String, handler: (HttpRequest, HttpResponse) -> Unit) {
+     // blah blah blah
+   }
+   ```
+   
+11. Navigating collections
+
+    ```java
+	List<String> cities = List.of("Kuala Lumpur", "Jakarta", "Singapore");
+	List<Character> cityFirstLetters = cities.stream()
+	                                     .map(s -> s.charAt(0))
+	                                     .collect(Collections.toList());
+	```
+	
+	```kotlin
+	val cities: List<String> = listOf("Kuala Lumpur", "Jakarta", "Singapore")
+	val cityFirstLetters: List<Char> = cities
+	                                     .map { it[0] }
+	```
+	
+	For the real stream operation (lazy evaluation), do this instead:
+	```kotlin
+	val cityFirstLetters: List<Char> = cities.asSequence() // Converts list into stream
+	                                     .map { it[0] }
+										 .toList() // Start the iteration and the whole process
+    ```
+	
+## Interop (How Java calls Kotlin)
+```kotlin
+// example.kt 
+package demo 
+
+class Foo 
+
+fun bar() { } 
+```
+
+can be called by Java this way
+
+```java
+new demo.Foo(); 
+demo.ExampleKt.bar(); 
+```
+
+If you don't like Kt on the class name, just override it with `@file:JvmName`
+
+```kotlin
+// oldutils.kt @file:JvmName("Utils") @file:JvmMultifileClass 
+
+package demo 
+
+fun foo() { } 
+
+
+// newutils.kt @file:JvmName("Utils") @file:JvmMultifileClass 
+
+package demo 
+
+fun bar() { } 
+```
+
+```java
+demo.Utils.foo(); 
+demo.Utils.bar(); 
+```
+
+
+## References
+[Official reference](https://kotlinlang.org/docs/reference/)
+[Slides about Kotlin](https://www.slideshare.net/intelliyole/kotlin-riviera-dev)
+[Increasing code readability with Kotlin](https://www.youtube.com/watch?v=Px2Hv2zWCM0&feature=youtu.be)
