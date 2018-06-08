@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "How Docker can make your coding life easier"
-date:   2018-03-10 00:12:10 +0800
+date:   2018-06-08 15:02:10 +0800
 categories: docker devops
 ---
 Have you ever had a situation where you have to use different versions of the same database? Probably because some legacy apps can only work with an old version of the database, while other apps work with a more recent one. If you have, and you had headache, then Docker probably is the answer for you.
@@ -14,9 +14,7 @@ I won't tell you more about the architecture in details. TL;DR; Docker is like V
 
 "Running an image" also means "creating a container" as container is a running instance of an image.
 
-```
 docker run --rm <account>/<image name>:<tag> command on the container
-```
 
 For e.g.
 
@@ -53,8 +51,11 @@ FROM openjdk:8-jre
 
 ADD http://central.maven.org/maven2/com/h2database/h2/1.4.196/h2-1.4.196.jar /app.jar
 
+# Documentation purpose only
+EXPOSE 8082
+
 # The final blocking command to run the app
-CMD ["java", "-jar", "/app.jar"]
+CMD ["java", "-jar", "/app.jar", "-webAllowOthers"]
 ```
 
 To build it, run:
@@ -72,7 +73,7 @@ docker run --rm sancho21/h2:1.4.196
 
 Note about `-t`:
 
-* sancho21 => your Docker online account
+* sancho21 => Your Docker online account
 * h2 => Name of this image
 * 1.4.196 => Tag
 
@@ -94,7 +95,7 @@ ADD http://hello.com/file.sh /opt/install
 # RUN: Run anything in the OS of the container
 RUN touch /tmp/combination
 
-# Exposing port 3306
+# This means nothing other than a documentation telling, this image is listening port 3306
 EXPOSE 3306
 
 # Defining a variable
@@ -109,7 +110,7 @@ Persistency are achievable by either 2 ways
   
   This is to specify that this path should persistent directory of the container, even after shutdown: `--mount source=myvol,target=/var/lib/mysql`. If you don't specify volume name, then the volume will be destroyed as soon as the associated container is removed.
 
-* **Bind mount** is a mapping of your local machine directory into a directory in the container. Non-Docker apps may have access to the directory. This is how to di it: `--mount type=bind,source=/home/ichsan/mysql/conf,target=/etc/mysql.conf.d`.
+* **Bind mount** is a mapping of your local machine directory into a directory in the container. Non-Docker apps may have access to the directory. This is how to do it: `--mount type=bind,source=/home/ichsan/mysql/conf,target=/etc/mysql.conf.d`.
 
 An example how to start a mysql service using the volume
 ```sh
@@ -122,6 +123,8 @@ A `Dockerfile` only knows this kind of definition `VOLUME ["/var/lib/mysql", "/o
 
 Read all possible options at [Docker website](https://docs.docker.com/storage/bind-mounts/#configure-bind-propagation).
 
+Defining `VOLUME` within Dockerfile means to define a mounted drive within the container. Some [expert on SO](https://stackoverflow.com/a/49620544/615025) is againts the definition inside the file as it messup the ability of people using the image to do initial volume planning (to design mounted drive).
+
 ### Creating a volume
 
 ```sh
@@ -129,6 +132,8 @@ docker volume create --driver vieux/sshfs \
    -o sshcmd=ichs002@10.16.30.11:/tmp/otrs \
    -o password=secret123 otrs-ssh-volume
 ```
+
+To see if the volume is created, do `docker volume ls`
 
 Read more [here](https://docs.docker.com/engine/admin/volumes/volumes/#use-a-volume-driver)
 
@@ -149,20 +154,67 @@ Read more [here](https://docs.docker.com/engine/admin/volumes/volumes/#use-a-vol
   ```sh
   docker run --rm  \
     --mount type=bind,source=$PWD,target=/app \
-	-w /app sancho21/oracle-java:6 \
-	java -cp . sancho21.Application
+    -w /app sancho21/oracle-java:6 \
+    java -cp . sancho21.Application
   ```
 
+* To start a postgres with username and password
+  ```sh
+  docker run --name psr-db \
+    -e POSTGRES_USER=psr \
+    -d postgres:latest
+  ```
+
+  To make it auto-restart later, use `--restart always` flag.
+
+  If you want to expose port 5432 later, you need to do it this way:
+  ```sh
+  docker stop psr-db
+  # Create a new image based on the container
+  docker commit psr-db psr-db02
+  # Delete the old one
+  docker rm psr-db
+  # Start with the newly exposed port
+  docker run -p 5432:5432 -d --name psr-db psr-db02
+  ```
 ## Important commands
 
+**Container related commands:**
 * To list running containers: `docker ps` (To list stopped ones, use `docker ps -f "status=exited"`)
 * To stop a running container: `docker stop conta1ner0hash0code`
 * To start a container: `docker start conta1ner0hash0code`
 * To remove a container: `docker rm conta1ner0hash0code`
 * Access its shell (bash): `docker exec -i -t conta1ner0hash0code /bin/bash`
+	`-i` or `--interactive` ensures that STDIN is kept open
+	`-t` or `--tty` is to start an interactive shell
+* To know which volume is used by a container: `docker inspect --format="{{.Mounts}}" conta1ner0hash0code`
+* To monitor what's going on in during container startup: `docker logs --tail 50 --follow --timestamps conta1ner0hash0code`
 
-If you hate using container IDs (hash code), you can use container names.
+* To remove orphaned volumes: `docker volume ls -qf dangling=true | xargs docker volume rm`
+* To see disk usage for volumes: `docker system df -v`
+* To remove dangling (unassociated) resources - images, containers, volumes and networks: `docker system prune`
 
+If you hate using container IDs (hash code), you can use container names e.g. `docker stop psr-db`.
+
+**Image related commands:**
+* To see available images: `docker images`
+* To see the size of an image's layers: `docker history <image name>`
+* To delete an image: `docker image rm <image name>`
+
+## Publishing your images
+
+1. Create a Docker account
+   Go to [Docker Hub](https://hub.docker.com/)
+
+2. Login in your shell
+   `docker login --username=yourhubusername --email=youremail@company.com`
+   
+3. Tag an image using
+   `docker tag hash0of0your0image yourhubusername/verse_gapminder:firsttry`
+
+4. Push it
+   `docker push yourhubusername/verse_gapminder`
+  
 
 ## Docker compose
 
@@ -190,7 +242,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: secret
-    volumes:
+	volumes:
     - /var/lib/mysql
 ```
 
@@ -238,4 +290,47 @@ Read more about options used in a Docker compose file [here](https://docs.docker
 
 A popular alternative to Docker compose is [Kubernetes](https://kubernetes.io/)
 
-Ref: https://blog.codeship.com/docker-machine-compose-and-swarm-how-they-work-together/
+Read further [here](https://blog.codeship.com/docker-machine-compose-and-swarm-how-they-work-together/)
+
+## Dockerfile best practices
+
+* Containers should be ephemeral
+  Stateless and absolute minimum configuration. Java session **on memory** is not stateless.
+	
+* Remove unnecessary files in build context
+  Remove files/dirs in the working directory (containing the Dockerfile) as they're included in the image. The other way is to use `.dockerignore`. One case is to ignore source code, because you only care about the compiled/runnable binary.
+
+* Use multi-stage builds
+  Try to put commands which **change a lot** (e.g. copying your compiled binary) at the last part of a command. If you put earlier, then the next stable commands won't be taken from cache as the data inside the container directory has changed.
+
+* Remove unimportant data in the container
+  For e.g. if you use `apt update` command. Don't forget to run another command to remove the cache.
+  
+* One container = once concern
+  A typical web app requires 2-3 containers e.g. web, database, cache manager (redis).
+  
+* Understand build cache
+  It's only `ADD` and `COPY` commands that are checked in size to determine whether to use cache.
+
+* Use official repositories
+  For the basis of your image. It's recommended to use [Alpine image](https://hub.docker.com/_/alpine/) as it's a very small Linux (5mb).
+  
+* About `apt-get` Linux command
+  Avoid using `RUN apt-get upgrade` or `dist-upgrade` as mostly it won't work in unprivileged container. But it's fine to use `apt-get install -y foo`. Also combine `update` and `install` with one `RUN` to prevent using cached layer. Please see a recommended command below.
+  
+  ```docker
+  RUN apt-get update && apt-get install -y \
+    ruby1.9.1-dev \
+    s3cmd=1.1.* \
+    && rm -rf /var/lib/apt/lists/*
+  ```
+  
+* About using pipes
+  Always prepend your piping command with `set -o pipefail &&` as `sh -c` used by Docker doesn't automatically stop on failure. But not all shells support it.
+  
+* `CMD`
+  It should be used this way: `CMD ["executable", "param1", "param2"]`
+  
+
+
+Read more [here](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#minimize-the-number-of-layers) and [here](https://ropenscilabs.github.io/r-docker-tutorial/04-Dockerhub.html)
