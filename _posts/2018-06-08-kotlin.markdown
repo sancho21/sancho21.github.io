@@ -464,6 +464,6 @@ demo.Utils.bar();
 ```
 
 ## References
-[Official reference](https://kotlinlang.org/docs/reference/)
-[Slides about Kotlin](https://www.slideshare.net/intelliyole/kotlin-riviera-dev)
-[Increasing code readability with Kotlin](https://www.youtube.com/watch?v=Px2Hv2zWCM0&feature=youtu.be)
+* [Official reference](https://kotlinlang.org/docs/reference/)
+* [Slides about Kotlin](https://www.slideshare.net/intelliyole/kotlin-riviera-dev)
+* [Increasing code readability with Kotlin](https://www.youtube.com/watch?v=Px2Hv2zWCM0&feature=youtu.be)
