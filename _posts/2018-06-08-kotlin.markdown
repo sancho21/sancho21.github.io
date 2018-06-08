@@ -30,8 +30,8 @@ Statically typed, JVM targeted, general-purpose programming language developed b
   public static Character readFirstLetter(Class<?> clazz) { 
     if (clazz == null) { // Preparing if clazz is null
       return null;
-	} 
-	return clazz.getName().charAt(0); 
+    } 
+    return clazz.getName().charAt(0); 
   } 
   ```
   
@@ -147,7 +147,7 @@ Statically typed, JVM targeted, general-purpose programming language developed b
     public Statement createStatement() throws SQLException {
         return con.createStatement();
     }
-	
+    
     // .. continue the same way with other methods
   }
   ```
@@ -208,29 +208,29 @@ It's not about writing less, but to read less.
    ```
    public class Customer {
      private final String name;
-	 private String age;
-	 
+     private String age;
+     
      public Customer(String name, int age) {
-	   this.name = name;
-	   this.age = age;
+       this.name = name;
+       this.age = age;
      }
-	 
-	 public String getName() {
-	   return name;
-	 }
-	 
-	 public int getAge() {
-	   return age;
-	 }
-	 
-	 public void setAge(int age) {
-	   this.age = age;
-	 }
-	 
-	 // Also:
-	 //   public String toString()
-	 //   public int hashCode()
-	 //   public boolean equals(Object o)
+     
+     public String getName() {
+       return name;
+     }
+     
+     public int getAge() {
+       return age;
+     }
+     
+     public void setAge(int age) {
+       this.age = age;
+     }
+     
+     // Also:
+     //   public String toString()
+     //   public int hashCode()
+     //   public boolean equals(Object o)
    }
    ```
    
@@ -269,8 +269,8 @@ It's not about writing less, but to read less.
    ```java
    void validateCustomer(Customer customer) {
      if (customer != null && customer.name != null && customer.name.startWith("M")) {
-	   throw new InvalidPrimeMinister();
-	 }
+       throw new InvalidPrimeMinister();
+     }
    }
    ```
    
@@ -278,8 +278,8 @@ It's not about writing less, but to read less.
    ```kotlin
    void validateCustomer(val customer: Customer) {
      if (customer.name.startWith("M")) {
-	   throw InvalidPrimeMinister();
-	 }
+       throw InvalidPrimeMinister();
+     }
    }
    ```
    
@@ -287,8 +287,8 @@ It's not about writing less, but to read less.
    ```kotlin
    void validateCustomer(val customer: Customer?) {
      if (customer?.name?.startWith("M")) {
-	   throw InvalidPrimeMinister();
-	 }
+       throw InvalidPrimeMinister();
+     }
    }
    ```
    
@@ -299,21 +299,21 @@ It's not about writing less, but to read less.
    ```java
    switch (port) {
      case 80:
-	 case 8080:
-	   type = "HTTP";
-	   break;
-	 case 443:
-	   type = "HTTPS";
-	   break;
-	 case 3306:
-	   type = "DATABASE";
-	   break;
-	 default:
-	   if (port >= 6881 && port <= 6889) {
-	     type = "TORRENT";
-	   } else {
-	     type = "UNKNOWN";
-	   }
+     case 8080:
+       type = "HTTP";
+       break;
+     case 443:
+       type = "HTTPS";
+       break;
+     case 3306:
+       type = "DATABASE";
+       break;
+     default:
+       if (port >= 6881 && port <= 6889) {
+         type = "TORRENT";
+       } else {
+         type = "UNKNOWN";
+       }
    }
    ```
    
@@ -321,10 +321,10 @@ It's not about writing less, but to read less.
    ```kotlin
    val type = when (port) {
      80, 8080 -> "HTTP"
-	 443 -> "HTTPS"
-	 3306 -> "DATABASE"
-	 in 6881..6889 -> "TORRENT"
-	 else -> "UNKNOWN"
+     443 -> "HTTPS"
+     3306 -> "DATABASE"
+     in 6881..6889 -> "TORRENT"
+     else -> "UNKNOWN"
    }
    ```
    
@@ -390,8 +390,8 @@ It's not about writing less, but to read less.
     ```kotlin
     fun main(args: Array<String>) {
       get("/students/1", {request, response -> /* blah blah blah */})
- 	 
- 	 // Similar to:
+      
+      // Similar to:
       get("/students/1") {request, response -> /* blah blah blah */}
     }
     
@@ -399,31 +399,31 @@ It's not about writing less, but to read less.
       // blah blah blah
     }
     ```
-    
+   
 11. Navigating collections
 
     While in Java you do this:
     ```java
-	List<String> cities = List.of("Kuala Lumpur", "Jakarta", "Singapore");
-	List<Character> cityFirstLetters = cities.stream()
-	                                     .map(s -> s.charAt(0))
-	                                     .collect(Collections.toList());
-	```
-	
-	In Kotlin, you can do it this way:
-	```kotlin
-	val cities: List<String> = listOf("Kuala Lumpur", "Jakarta", "Singapore")
-	val cityFirstLetters: List<Char> = cities
-	                                     .map { it[0] }
-	```
-	
-	For the real stream operation (lazy evaluation), do this instead:
-	```kotlin
-	val cityFirstLetters: List<Char> = cities.asSequence() // Converts list into stream
-	                                     .map { it[0] }
-										 .toList() // Start the iteration and the whole process
+    List<String> cities = List.of("Kuala Lumpur", "Jakarta", "Singapore");
+    List<Character> cityFirstLetters = cities.stream()
+                                         .map(s -> s.charAt(0))
+                                         .collect(Collections.toList());
     ```
-	
+    
+    In Kotlin, you can do it this way:
+    ```kotlin
+    val cities: List<String> = listOf("Kuala Lumpur", "Jakarta", "Singapore")
+    val cityFirstLetters: List<Char> = cities
+                                         .map { it[0] }
+    ```
+    
+    For the real stream operation (lazy evaluation), do this instead:
+    ```kotlin
+    val cityFirstLetters: List<Char> = cities.asSequence() // Converts list into stream
+                                         .map { it[0] }
+                                         .toList() // Start the iteration and the whole process
+    ```
+    
 ## Interop (How Java calls Kotlin)
 
 Supposed that you have the following Kotlin code:
@@ -462,7 +462,6 @@ fun bar() { }
 demo.Utils.foo(); 
 demo.Utils.bar(); 
 ```
-
 
 ## References
 [Official reference](https://kotlinlang.org/docs/reference/)
