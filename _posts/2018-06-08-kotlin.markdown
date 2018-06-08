@@ -8,7 +8,6 @@ categories: kotlin programming-language
 
 Statically typed, JVM targeted, general-purpose programming language developed by JetBrains intended for industrial use.
 
-
 ## Features
 
 * **Extension functions**
@@ -83,7 +82,7 @@ Statically typed, JVM targeted, general-purpose programming language developed b
 
   Given this is the way to call a function:
   ```kotlin
-  withTx { println(“In a transaction!") } 
+  withTx { println("In a transaction!") } 
   ```
   
   ```kotlin
@@ -152,11 +151,20 @@ Statically typed, JVM targeted, general-purpose programming language developed b
     // .. continue the same way with other methods
   }
   ```
+  
+  Using `by` in Kotlin, it's going to be much simpler:
+  
+  ```kotlin
+  class DecoratedConnection(private val con: Connection) : Connection by con {
+    fun decorateStatus() { println("This is decorate method") }
+  } 
+  ```
 
 It's not about writing less, but to read less.
 
 1. Defining final variables
 
+   While in Java you do this:
    ```java
    final List<String> names = new ArrayList<>();
    names.add("Bob");
@@ -168,8 +176,7 @@ It's not about writing less, but to read less.
    }
    ```
    
-   into
-   
+   In Kotlin, you can do it this way:
    ```kotlin
    val names = ArrayList<String>()
    names.add("Bob")
@@ -183,11 +190,13 @@ It's not about writing less, but to read less.
 
 2. No getter
 
+   While in Java you do this:
    ```java
    List<String> words = new ArrayList<>();
    int s = words.getSize();
    ```
    
+   In Kotlin, you can do it this way:
    ```kotlin
    val words = ArrayList<String>()
    val s = words.size
@@ -195,6 +204,7 @@ It's not about writing less, but to read less.
 
 3. Data classes
 
+   While in Java you do this:
    ```
    public class Customer {
      private final String name;
@@ -224,18 +234,21 @@ It's not about writing less, but to read less.
    }
    ```
    
+   In Kotlin, you can do it this way:
    ```kotlin
    data class Customer(val name: String, var age: Int)
    ```
   
 4. No need to cast after checking
 
+   While in Java you do this:
    ```java
    if (o instanceof String) {
      ((String) o).toUppercase();
    }
    ```
    
+   In Kotlin, you can do it this way:   
    ```kotlin
    if (o instanceof String) {
      o.toUppercase()
@@ -252,6 +265,7 @@ It's not about writing less, but to read less.
 
    All types in Kotlin is always non-null, unless appended with `?`.
    
+   While in Java you do this:
    ```java
    void validateCustomer(Customer customer) {
      if (customer != null && customer.name != null && customer.name.startWith("M")) {
@@ -260,6 +274,7 @@ It's not about writing less, but to read less.
    }
    ```
    
+   In Kotlin, you can do it this way:
    ```kotlin
    void validateCustomer(val customer: Customer) {
      if (customer.name.startWith("M")) {
@@ -280,6 +295,7 @@ It's not about writing less, but to read less.
 
 6. No complicated switch
 
+   While in Java you do this:
    ```java
    switch (port) {
      case 80:
@@ -301,6 +317,7 @@ It's not about writing less, but to read less.
    }
    ```
    
+   In Kotlin, you can do it this way:
    ```kotlin
    val type = when (port) {
      80, 8080 -> "HTTP"
@@ -313,6 +330,7 @@ It's not about writing less, but to read less.
    
 7. Default parameter values
 
+   While in Java you do this:
    ```java
    String split(String text, String delimiter) {
      // ...
@@ -323,6 +341,7 @@ It's not about writing less, but to read less.
    }
    ```
    
+   In Kotlin, you can do it this way:
    ```kotlin
    String split(text: String, delimiter: String = " ") {
      // ...
@@ -331,20 +350,24 @@ It's not about writing less, but to read less.
    
 8. Simplified range definition
 
+   While in Java you do this:
    ```java
    IntStream numbers = IntStream.range(1, 100);
    ```
    
+   In Kotlin, you can do it this way:
    ```kotlin
    val numbers: IntRange = 1..100
    ```
    
 9. No need to keep unused variables in Lambda expression
 
+   While in Java you do this:
    ```java
    button.addActionListenerEvent(e -> System.out.println("I was pushed"));
    ```
    
+   In Kotlin, you can do it this way:
    ```kotlin
    button.addActionListenerEvent { println("I was pushed") }
    button.addActionListenerEvent { println("I was pushed by event $it") }
@@ -352,31 +375,34 @@ It's not about writing less, but to read less.
 
 10. Defining lambda parameters is simpler
 
-   ```java
-   public static void main(String[] args) {
-     get("/students/1", (request, response) -> { /* blah blah blah */ });
-   }
-   
-   public static void get(String path, BiConsumer<HttpRequest, HttpResponse> handler) {
-     // blah blah blah
-   }
-   ```
-   
-   ```kotlin
-   fun main(args: Array<String>) {
-     get("/students/1", {request, response -> /* blah blah blah */})
-	 
-	 // Similar to:
-     get("/students/1") {request, response -> /* blah blah blah */}
-   }
-   
-   fun get(path: String, handler: (HttpRequest, HttpResponse) -> Unit) {
-     // blah blah blah
-   }
-   ```
-   
+    While in Java you do this:
+    ```java
+    public static void main(String[] args) {
+      get("/students/1", (request, response) -> { /* blah blah blah */ });
+    }
+    
+    public static void get(String path, BiConsumer<HttpRequest, HttpResponse> handler) {
+      // blah blah blah
+    }
+    ```
+    
+    In Kotlin, you can do it this way:
+    ```kotlin
+    fun main(args: Array<String>) {
+      get("/students/1", {request, response -> /* blah blah blah */})
+ 	 
+ 	 // Similar to:
+      get("/students/1") {request, response -> /* blah blah blah */}
+    }
+    
+    fun get(path: String, handler: (HttpRequest, HttpResponse) -> Unit) {
+      // blah blah blah
+    }
+    ```
+    
 11. Navigating collections
 
+    While in Java you do this:
     ```java
 	List<String> cities = List.of("Kuala Lumpur", "Jakarta", "Singapore");
 	List<Character> cityFirstLetters = cities.stream()
@@ -384,6 +410,7 @@ It's not about writing less, but to read less.
 	                                     .collect(Collections.toList());
 	```
 	
+	In Kotlin, you can do it this way:
 	```kotlin
 	val cities: List<String> = listOf("Kuala Lumpur", "Jakarta", "Singapore")
 	val cityFirstLetters: List<Char> = cities
@@ -398,6 +425,8 @@ It's not about writing less, but to read less.
     ```
 	
 ## Interop (How Java calls Kotlin)
+
+Supposed that you have the following Kotlin code:
 ```kotlin
 // example.kt 
 package demo 
@@ -407,15 +436,13 @@ class Foo
 fun bar() { } 
 ```
 
-can be called by Java this way
-
+This piece can be called by Java this way:
 ```java
 new demo.Foo(); 
 demo.ExampleKt.bar(); 
 ```
 
 If you don't like Kt on the class name, just override it with `@file:JvmName`
-
 ```kotlin
 // oldutils.kt @file:JvmName("Utils") @file:JvmMultifileClass 
 
